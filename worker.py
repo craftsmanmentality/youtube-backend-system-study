@@ -31,29 +31,30 @@ def transcode_video(filename):
         "360p": 360
     }
 
-    # 3. 화질별로 FFmpeg 실행
+# 3. 화질별로 FFmpeg 실행
     for res_name, height in resolutions.items():
-        # 원본 파일명에서 확장자를 분리 (예: test.mp4 -> test, .mp4)
+        # 원본 파일명에서 확장자를 분리 (예: "sample.mp4" -> "sample", ".mp4")
         name, ext = os.path.splitext(filename)
-        output_filename = f"{name}_{res_name}{ext}"
-        local_output = f"/tmp/{output_filename}"
+        
+        # 로컬 임시 파일명 (다른 작업과 안 섞이게 고유하게)
+        local_output = f"/tmp/{name}_{res_name}{ext}" 
+        
+        # ⭐️ S3에 저장될 실제 경로 지정 (비디오이름/해상도.mp4)
+        s3_key = f"{name}/{res_name}{ext}"
         
         print(f"[{filename}] {res_name} 화질 변환 중...")
-        
-        # FFmpeg 명령어 (비율 유지하며 세로 해상도 변경, h264 코덱 사용)
         cmd = f"ffmpeg -i {local_input} -vf scale=-2:{height} -c:v libx264 -crf 23 -preset fast -c:a aac -y {local_output}"
         
         try:
             subprocess.run(cmd, shell=True, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             
-            # 4. 변환된 파일을 새로운 'transcoded' 버킷에 업로드 (폴더 구조처럼 저장)
-            s3_client.upload_file(local_output, TRANSCODED_BUCKET, f"{res_name}/{output_filename}")
-            print(f"[{filename}] {res_name} 업로드 완료!")
+            # 4. 바뀐 경로(s3_key)로 업로드
+            s3_client.upload_file(local_output, TRANSCODED_BUCKET, s3_key)
+            print(f"[{filename}] {res_name} 업로드 완료! (경로: {s3_key})")
             
         except subprocess.CalledProcessError as e:
             print(f"[{filename}] {res_name} 변환 실패: {e}")
         finally:
-            # 임시 출력 파일 삭제
             if os.path.exists(local_output):
                 os.remove(local_output)
 

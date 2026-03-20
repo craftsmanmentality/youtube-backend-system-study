@@ -50,11 +50,12 @@ async def get_origin_video(filename: str):
     except Exception as e:
         raise HTTPException(status_code=404, detail="원본 파일을 찾을 수 없습니다.")
 
-# 2. 트랜스코딩된 영상 가져오기 (폴더 경로 포함 ⭐️)
-@app.get("/video/transcoded/{resolution}/{filename}")
-async def get_transcoded_video(resolution: str, filename: str):
-    # 실제 S3에 저장된 Key 구조 (예: "720p/sample_720p.mp4")
-    object_key = f"{resolution}/{filename}" 
+# 2. 트랜스코딩된 영상 가져오기 (비디오 이름 폴더 구조 적용 ⭐️)
+@app.get("/video/transcoded/{video_name}/{resolution}")
+async def get_transcoded_video(video_name: str, resolution: str):
+    # 실제 S3에 저장된 Key 구조 (예: "sample/720p.mp4")
+    # 사용자가 api 호출 시 확장자를 안 붙여도 되게 서버에서 .mp4를 붙여줍니다.
+    object_key = f"{video_name}/{resolution}.mp4" 
     
     try:
         url = s3_client.generate_presigned_url('get_object',
