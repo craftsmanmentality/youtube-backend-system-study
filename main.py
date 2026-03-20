@@ -1,7 +1,7 @@
 import boto3
 from fastapi import FastAPI, UploadFile, File, HTTPException
 import os
-from worker import transcode_video # 워커의 태스크 임포트
+from worker import extract_audio, transcode_video # 두 태스크 모두 임포트
 
 app = FastAPI()
 
@@ -26,14 +26,18 @@ def startup_event():
 @app.post("/upload/")
 async def upload_video(file: UploadFile = File(...)):
     try:
-        # 1. MinIO 스토리지로 원본 파일 업로드
         s3_client.upload_fileobj(file.file, ORIGIN_BUCKET, file.filename)
         
-        # 2. 백그라운드 워커(Celery)에게 화질 변환 작업 지시 (.delay를 붙여야 비동기로 실행됨)
-        transcode_video.delay(file.filename)
+        # 1. 오디오 추출 작업 지시
+        extract_audio.delay(file.filename)
         
+        # 2. 화질별 비디오 변환 작업 각각 지시
+        resolutions = {"1080p": 1080, "720p": 720, "360p": 360}
+        for res_name, height in resolutions.items():
+            transcode_video.delay(file.filename, res_name, height)
+            
         return {
-            "message": "성공적으로 업로드 되었으며, 화질 변환 작업이 백그라운드에서 시작되었습니다!",
+            "message": "업로드 성공! 오디오 및 다중 화질 비디오 변환이 병렬로 시작되었습니다.",
             "filename": file.filename
         }
     except Exception as e:

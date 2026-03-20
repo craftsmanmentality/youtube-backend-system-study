@@ -11,9 +11,20 @@ services:
     networks:
       - video-network
 
-  worker:
+  # 🎧 오디오 전담 워커
+  audio_worker:
     build: .
-    command: celery -A worker.celery_app worker --loglevel=info
+    command: celery -A worker.celery_app worker -Q audio_queue --loglevel=info
+    depends_on:
+      - storage
+      - redis
+    networks:
+      - video-network
+
+  # 🎬 비디오 전담 워커
+  video_worker:
+    build: .
+    command: celery -A worker.celery_app worker -Q video_queue --loglevel=info --concurrency=2
     depends_on:
       - storage
       - redis
