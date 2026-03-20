@@ -7,14 +7,31 @@ services:
       - "8000:8000"
     depends_on:
       - storage
+      - redis
+    networks:
+      - video-network
+
+  worker:
+    build: .
+    command: celery -A worker.celery_app worker --loglevel=info
+    depends_on:
+      - storage
+      - redis
+    networks:
+      - video-network
+
+  redis:
+    image: redis:6-alpine
+    ports:
+      - "6379:6379"
     networks:
       - video-network
 
   storage:
     image: minio/minio
     ports:
-      - "9000:9000" # API 포트
-      - "9001:9001" # 웹 콘솔 포트
+      - "9000:9000"
+      - "9001:9001"
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin

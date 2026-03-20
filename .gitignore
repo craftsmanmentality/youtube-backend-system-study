@@ -12,4 +12,4 @@ minio_data/
 .DS_Store
 
 # 모든 mp4 제외
-echo "*.mp4" >> .gitignore
+*.mp4
