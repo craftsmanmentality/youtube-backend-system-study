@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  fastapi:
+    build: .
+    ports:
+      - "8000:8000"
+    depends_on:
+      - storage
+    networks:
+      - video-network
+
+  storage:
+    image: minio/minio
+    ports:
+      - "9000:9000" # API 포트
+      - "9001:9001" # 웹 콘솔 포트
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - video-network
+
+networks:
+  video-network:
+    driver: bridge
+
+volumes:
+  minio_data:

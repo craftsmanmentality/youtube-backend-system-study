@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+
+# Docker/MinIO Data (데이터 용량이 커질 수 있으므로 제외 추천)
+minio_data/
+
+# OS
+.DS_Store
+
+# 모든 mp4 제외
+echo "*.mp4" >> .gitignore
